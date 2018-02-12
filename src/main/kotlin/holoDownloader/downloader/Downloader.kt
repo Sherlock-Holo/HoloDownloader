@@ -33,8 +33,7 @@ class Downloader(val url: String, val threadNum: Int, var filePath: String?) {
         if (responseCode != 206 || contentLength <= smallFileSize) {
             println("download file is smaller than 4MB, use single thread mode")
             singleDownload(conn, contentLength, file)
-        }
-        else {
+        } else {
             println("use $threadNum threads to download file")
             multiDownload(file, contentLength)
         }
@@ -69,8 +68,6 @@ class Downloader(val url: String, val threadNum: Int, var filePath: String?) {
             bufferedInputStream.close()
             fileOutputStream.close()
         }
-
-        println("finish, length: $contentLength bytes")
     }
 
     private fun multiDownload(file: File, contentLength: Long) {
