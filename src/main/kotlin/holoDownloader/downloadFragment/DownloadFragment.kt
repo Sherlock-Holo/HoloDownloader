@@ -9,6 +9,7 @@ class DownloadFragment(private val url: String, private val cursor: Long, privat
 
     override fun run() {
         val conn = URL(url).openConnection()
+
         conn.setRequestProperty("Accept", "*/*")
         conn.setRequestProperty("Range", "bytes=$cursor-${cursor + size - 1}")
 
@@ -39,6 +40,6 @@ class DownloadFragment(private val url: String, private val cursor: Long, privat
         bufferedInputStream.close()
         randomAccessFile.close()
 
-        println("finish，length: $size bytes")
+//        println("finish，length: $size bytes")
     }
 }
