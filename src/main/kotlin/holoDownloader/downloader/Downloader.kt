@@ -30,13 +30,30 @@ class Downloader(val url: String, val threadNum: Int, var filePath: String?) {
             file.delete()
         }
 
-        if (responseCode != 206 || contentLength <= smallFileSize) {
+        when {
+            responseCode != 206 -> {
+                println("server not support multi threads download, use single mode")
+                singleDownload(conn, contentLength, file)
+            }
+
+            contentLength <= smallFileSize -> {
+                println("download file is smaller than 4MB, use single thread mode")
+                singleDownload(conn, contentLength, file)
+            }
+
+            else -> {
+                println("use $threadNum threads to download file")
+                multiDownload(file, contentLength)
+            }
+        }
+
+        /*if (responseCode != 206 || contentLength <= smallFileSize) {
             println("download file is smaller than 4MB, use single thread mode")
             singleDownload(conn, contentLength, file)
         } else {
             println("use $threadNum threads to download file")
             multiDownload(file, contentLength)
-        }
+        }*/
 
         // print the download status
         Thread(DownloadStatus(downloaded, contentLength)).start()
