@@ -1,17 +1,15 @@
 package holoDownloader.downloader
 
-import holoDownloader.downloadFragment.DownloadFragment
-import java.io.BufferedInputStream
-import java.io.File
-import java.io.FileOutputStream
-import java.io.RandomAccessFile
+import holoDownloader.downloadFragment.FragmentDownload
+import holoDownloader.status.DownloadStatus
+import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.concurrent.atomic.AtomicIntegerArray
+import java.util.concurrent.atomic.AtomicInteger
 
-class Downloader(val url: String, val threadNum: Int, val filePath: String) {
+class Downloader(val url: String, val threadNum: Int, var filePath: String?) {
     val smallFileSize = 4194304 // 4 MiB
-    private val downloadLog = AtomicIntegerArray(intArrayOf(0, 0))
+    private val downloaded = AtomicInteger(0)
 
     fun download() {
         val url = URL(this.url)
@@ -22,6 +20,9 @@ class Downloader(val url: String, val threadNum: Int, val filePath: String) {
 
         val responseCode = conn.responseCode
         val contentLength = conn.contentLength.toLong()
+        val downloadFileName = url.file.split('/').last()
+
+        if (filePath == null) filePath = downloadFileName
 
         val file = File(filePath)
 
@@ -30,12 +31,49 @@ class Downloader(val url: String, val threadNum: Int, val filePath: String) {
         }
 
         if (responseCode != 206 || contentLength <= smallFileSize) {
-            if (singleDownload(conn, contentLength, file)) println("finish, length: $contentLength bytes")
-            return
+            println("download file is smaller than 4MB, use single thread mode")
+            singleDownload(conn, contentLength, file)
+        }
+        else {
+            println("use $threadNum threads to download file")
+            multiDownload(file, contentLength)
         }
 
-        println("file name: ${url.file.split('/').last()}")
+        // print the download status
+        Thread(DownloadStatus(downloaded, contentLength)).start()
+    }
 
+
+    private fun singleDownload(conn: HttpURLConnection, contentLength: Long, file: File) {
+        val buffer = ByteArray(8192)
+        val bufferedInputStream = BufferedInputStream(conn.inputStream)
+        val fileOutputStream = FileOutputStream(file)
+
+        var length = 0
+        try {
+            while (length < contentLength) {
+                val dataLength = bufferedInputStream.read(buffer, 0, buffer.size)
+                if (dataLength < 0) {
+                    println("download failed")
+                    System.exit(1)
+                }
+
+                fileOutputStream.write(buffer, 0, dataLength)
+                length += dataLength
+                downloaded.addAndGet(length)
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            return
+        } finally {
+            bufferedInputStream.close()
+            fileOutputStream.close()
+        }
+
+        println("finish, length: $contentLength bytes")
+    }
+
+    private fun multiDownload(file: File, contentLength: Long) {
         val randomAccessFile = RandomAccessFile(file, "rw")
         randomAccessFile.setLength(contentLength)
 
@@ -47,26 +85,10 @@ class Downloader(val url: String, val threadNum: Int, val filePath: String) {
 
         for (i in 0 until threadNum) {
             if (i != threadNum - 1) {
-                Thread(DownloadFragment(this.url, i * fragmentLength, fragmentLength, file)).start()
+                Thread(FragmentDownload(this.url, i * fragmentLength, fragmentLength, file, downloaded)).start()
             } else {
-                Thread(DownloadFragment(this.url, i * fragmentLength, lastFragmentLength, file)).start()
+                Thread(FragmentDownload(this.url, i * fragmentLength, lastFragmentLength, file, downloaded)).start()
             }
         }
-    }
-
-    private fun singleDownload(conn: HttpURLConnection, contentLength: Long, file: File): Boolean {
-        val buffer = ByteArray(8192)
-        val bufferedInputStream = BufferedInputStream(conn.inputStream)
-        val fileOutputStream = FileOutputStream(file)
-
-        var length = 0
-        while (length < contentLength) {
-            val dataLength = bufferedInputStream.read(buffer, 0, buffer.size)
-            if (dataLength < 0) TODO()
-
-            fileOutputStream.write(buffer, 0, dataLength)
-            length += dataLength
-        }
-        return true
     }
 }
