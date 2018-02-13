@@ -1,16 +1,29 @@
 package holoDownloader.downloadStatus
 
+import holoDownloader.errorFlag.ErrorFlag
 import org.jline.terminal.TerminalBuilder
 import java.text.DecimalFormat
 import java.util.concurrent.atomic.AtomicInteger
 
-class DownloadStatus(private val downloaded: AtomicInteger, private val contentLength: Long, private val speedInterval: Long) : Runnable {
+class DownloadStatus(
+        private val downloaded: AtomicInteger,
+        private val contentLength: Long,
+        private val speedInterval: Long,
+        private val errorFlag: ErrorFlag
+) : Runnable {
+
     private val percentFormat = DecimalFormat("0.00")
     private val speedFormat = DecimalFormat("#,###")
 
     private val terminal = TerminalBuilder.terminal()
 
     override fun run() {
+        if (errorFlag.isError) {
+            println()
+            println("download failed")
+            return
+        }
+
         val startTime = System.currentTimeMillis()
 
         var lastTimeLength = 0

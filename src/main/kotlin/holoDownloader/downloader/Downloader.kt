@@ -1,7 +1,7 @@
 package holoDownloader.downloader
 
 import holoDownloader.downloadStatus.DownloadStatus
-import holoDownloader.errorStatus.ErrorStatus
+import holoDownloader.errorFlag.ErrorFlag
 import holoDownloader.fragmentDownload.FragmentDownload
 import java.io.*
 import java.net.HttpURLConnection
@@ -39,30 +39,32 @@ class Downloader(private val url: String, private val threadNum: Int, private va
             file.delete()
         }
 
+        val errorFlag = ErrorFlag()
+
         when {
             responseCode != HttpURLConnection.HTTP_PARTIAL -> {
                 println("server not support multi threads download, use single mode\n")
-                singleDownload(conn, contentLength, file)
+                singleDownload(conn, contentLength, file, errorFlag)
             }
 
             contentLength <= smallFileSize -> {
                 println("download file is smaller than 4MB, use single thread mode\n")
-                singleDownload(conn, contentLength, file)
+                singleDownload(conn, contentLength, file, errorFlag)
             }
 
             else -> {
                 conn.disconnect()
                 println("download Threads: $threadNum\n")
-                multiDownload(file, contentLength)
+                multiDownload(file, contentLength, errorFlag)
             }
         }
 
         // print the download status
-        Thread(DownloadStatus(downloaded, contentLength, speedInterval)).start()
+        Thread(DownloadStatus(downloaded, contentLength, speedInterval, errorFlag)).start()
     }
 
 
-    private fun singleDownload(conn: HttpURLConnection, contentLength: Long, file: File) {
+    private fun singleDownload(conn: HttpURLConnection, contentLength: Long, file: File, errorFlag: ErrorFlag) {
         val buffer = ByteArray(8192)
         val bufferedInputStream = BufferedInputStream(conn.inputStream)
         val bufferedOutputStream = BufferedOutputStream(file.outputStream(), 8192)
@@ -72,7 +74,7 @@ class Downloader(private val url: String, private val threadNum: Int, private va
             while (length < contentLength) {
                 val dataLength = bufferedInputStream.read(buffer, 0, buffer.size)
                 if (dataLength < 0) {
-                    println("download failed")
+                    errorFlag.isError = true
                     break
                 }
 
@@ -84,18 +86,15 @@ class Downloader(private val url: String, private val threadNum: Int, private va
             e.printStackTrace()
         } finally {
             conn.disconnect()
-//            bufferedOutputStream.flush()
             bufferedOutputStream.close()
             bufferedInputStream.close()
         }
     }
 
-    private fun multiDownload(file: File, contentLength: Long) {
+    private fun multiDownload(file: File, contentLength: Long, errorFlag: ErrorFlag) {
         val randomAccessFile = RandomAccessFile(file, "rw")
         randomAccessFile.setLength(contentLength)
         randomAccessFile.close()
-
-        val errorFlag = ErrorStatus()
 
         val fragmentLength = contentLength / threadNum
 

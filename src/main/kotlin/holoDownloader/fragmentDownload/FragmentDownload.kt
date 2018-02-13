@@ -1,6 +1,6 @@
 package holoDownloader.fragmentDownload
 
-import holoDownloader.errorStatus.ErrorStatus
+import holoDownloader.errorFlag.ErrorFlag
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.IOException
@@ -16,7 +16,7 @@ class FragmentDownload(
         private val size: Long,
         private val file: File,
         private val downloaded: AtomicInteger,
-        private val errorFlag: ErrorStatus
+        private val errorFlag: ErrorFlag
 ) : Runnable {
 
     private val endPos = cursor + size - 1
@@ -59,7 +59,6 @@ class FragmentDownload(
         }
 
         errorFlag.isError = true
-        println("download failed")
     }
 
     private fun connect(): URLConnection? {
