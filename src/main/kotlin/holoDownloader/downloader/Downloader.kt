@@ -84,9 +84,9 @@ class Downloader(private val url: String, private val threadNum: Int, private va
             e.printStackTrace()
         } finally {
             conn.disconnect()
-            bufferedOutputStream.flush()
-            bufferedInputStream.close()
+//            bufferedOutputStream.flush()
             bufferedOutputStream.close()
+            bufferedInputStream.close()
         }
     }
 
