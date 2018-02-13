@@ -1,6 +1,7 @@
 package holoDownloader.downloader
 
 import holoDownloader.downloadFragment.FragmentDownload
+import holoDownloader.errorStatus.ErrorStatus
 import holoDownloader.status.DownloadStatus
 import java.io.*
 import java.net.HttpURLConnection
@@ -71,7 +72,7 @@ class Downloader(val url: String, val threadNum: Int, var filePath: String?) {
                 val dataLength = bufferedInputStream.read(buffer, 0, buffer.size)
                 if (dataLength < 0) {
                     println("download failed")
-                    System.exit(1)
+                    break
                 }
 
                 fileOutputStream.write(buffer, 0, dataLength)
@@ -80,7 +81,6 @@ class Downloader(val url: String, val threadNum: Int, var filePath: String?) {
             }
         } catch (e: IOException) {
             e.printStackTrace()
-            return
         } finally {
             bufferedInputStream.close()
             fileOutputStream.close()
@@ -91,6 +91,8 @@ class Downloader(val url: String, val threadNum: Int, var filePath: String?) {
         val randomAccessFile = RandomAccessFile(file, "rw")
         randomAccessFile.setLength(contentLength)
 
+        val errorFlag = ErrorStatus()
+
         val fragmentLength = contentLength / threadNum
 
         val lastFragmentLength =
@@ -99,9 +101,9 @@ class Downloader(val url: String, val threadNum: Int, var filePath: String?) {
 
         for (i in 0 until threadNum) {
             if (i != threadNum - 1) {
-                Thread(FragmentDownload(this.url, i * fragmentLength, fragmentLength, file, downloaded)).start()
+                Thread(FragmentDownload(this.url, i * fragmentLength, fragmentLength, file, downloaded, errorFlag)).start()
             } else {
-                Thread(FragmentDownload(this.url, i * fragmentLength, lastFragmentLength, file, downloaded)).start()
+                Thread(FragmentDownload(this.url, i * fragmentLength, lastFragmentLength, file, downloaded, errorFlag)).start()
             }
         }
     }

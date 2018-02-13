@@ -1,5 +1,6 @@
 package holoDownloader.downloadFragment
 
+import holoDownloader.errorStatus.ErrorStatus
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.IOException
@@ -12,7 +13,8 @@ class FragmentDownload(
         private val cursor: Long,
         private val size: Long,
         private val file: File,
-        private val downloaded: AtomicInteger
+        private val downloaded: AtomicInteger,
+        private val errorFlag: ErrorStatus
 ) : Runnable {
 
     override fun run() {
@@ -39,11 +41,14 @@ class FragmentDownload(
 
         try {
             while (contentLength < size) {
+                if (errorFlag.isError) break
+
                 val length = bufferedInputStream.read(buffer, 0, buffer.size)
 
                 if (length < 0) {
                     println("download failed")
-                    System.exit(1)
+                    errorFlag.isError = true
+                    break
                 }
 
                 randomAccessFile.write(buffer, 0, length)
