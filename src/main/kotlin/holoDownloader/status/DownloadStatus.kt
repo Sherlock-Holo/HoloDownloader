@@ -11,11 +11,13 @@ class DownloadStatus(private val downloaded: AtomicInteger, private val contentL
     private val terminal = TerminalBuilder.terminal()
 
     override fun run() {
-        var lastTimeLength = 0
         val startTime = System.currentTimeMillis()
+
+        var lastTimeLength = 0
+
         val sb = StringBuilder()
 
-        do {
+        while (lastTimeLength < contentLength) {
             val consoleColumns = terminal.size.columns
 
             val percent = percentFormat.format(downloaded.toDouble() / contentLength.toDouble() * 100) + "%"
@@ -42,19 +44,20 @@ class DownloadStatus(private val downloaded: AtomicInteger, private val contentL
 
             sb.append("] $percent  $speed")
 
-            print('\r')
-
             print(sb.toString())
 
             if (percent == "100.00%") {
+                println()
+                println()
                 println("done, use time: ${percentFormat.format((System.currentTimeMillis() - startTime) / 1_000)} seconds")
                 break
             }
 
+            print('\r')
+
             lastTimeLength = downloaded.toInt()
 
             Thread.sleep(1000)
-
-        } while (lastTimeLength < contentLength)
+        }
     }
 }

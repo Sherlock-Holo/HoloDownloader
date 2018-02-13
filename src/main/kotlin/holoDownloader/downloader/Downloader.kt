@@ -33,17 +33,17 @@ class Downloader(private val url: String, private val threadNum: Int, private va
 
         when {
             responseCode != 206 -> {
-                println("server not support multi threads download, use single mode")
+                println("server not support multi threads download, use single mode\n")
                 singleDownload(conn, contentLength, file)
             }
 
             contentLength <= smallFileSize -> {
-                println("download file is smaller than 4MB, use single thread mode")
+                println("download file is smaller than 4MB, use single thread mode\n")
                 singleDownload(conn, contentLength, file)
             }
 
             else -> {
-                println("Threads: $threadNum")
+                println("download Threads: $threadNum\n")
                 multiDownload(file, contentLength)
             }
         }
@@ -69,7 +69,7 @@ class Downloader(private val url: String, private val threadNum: Int, private va
 
                 bufferedOutputStream.write(buffer, 0, dataLength)
                 length += dataLength
-                downloaded.addAndGet(length)
+                downloaded.addAndGet(dataLength)
             }
         } catch (e: IOException) {
             e.printStackTrace()
