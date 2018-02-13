@@ -51,13 +51,21 @@ class FragmentDownload(
                 return
             }
 
-            cursor += readData(randomAccessFile, bufferedInputStream)
-            if (cursor >= endPos) break
+            val readLength = readData(randomAccessFile, bufferedInputStream)
+
+            if (readLength != null) {
+                cursor += readLength
+            } else break
+
+            if (cursor >= endPos) return
         }
+        errorFlag.isError = true
     }
 
     private fun connect(): URLConnection? {
         for (i in 0 until 5) {
+            if (errorFlag.isError) break
+
             try {
                 return URL(url).openConnection()
             } catch (e: IOException) {
@@ -71,20 +79,18 @@ class FragmentDownload(
         conn.setRequestProperty("Range", "bytes=$cursor-$endPos")
     }
 
-    private fun readData(randomAccessFile: RandomAccessFile, bufferedInputStream: BufferedInputStream): Int {
+    private fun readData(randomAccessFile: RandomAccessFile, bufferedInputStream: BufferedInputStream): Int? {
         val buffer = ByteArray(8192)
 
         var contentLength = 0
 
         try {
             while (contentLength < size) {
-                if (errorFlag.isError) break
+                if (errorFlag.isError) return null
 
                 val length = bufferedInputStream.read(buffer, 0, buffer.size)
 
                 if (length < 0) {
-                    println("download failed")
-                    errorFlag.isError = true
                     break
                 }
 
