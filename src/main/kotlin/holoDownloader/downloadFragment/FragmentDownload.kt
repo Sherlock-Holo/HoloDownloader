@@ -29,7 +29,7 @@ class FragmentDownload(
 
         val bufferedInputStream = BufferedInputStream(conn.inputStream)
 
-        val randomAccessFile = RandomAccessFile(file, "rw")
+        val randomAccessFile = RandomAccessFile(file, "rwd")
 
         assert(file.exists())
 

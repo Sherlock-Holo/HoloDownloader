@@ -48,14 +48,6 @@ class Downloader(val url: String, val threadNum: Int, var filePath: String?) {
             }
         }
 
-        /*if (responseCode != 206 || contentLength <= smallFileSize) {
-            println("download file is smaller than 4MB, use single thread mode")
-            singleDownload(conn, contentLength, file)
-        } else {
-            println("use $threadNum threads to download file")
-            multiDownload(file, contentLength)
-        }*/
-
         // print the download status
         Thread(DownloadStatus(downloaded, contentLength)).start()
     }
@@ -64,7 +56,7 @@ class Downloader(val url: String, val threadNum: Int, var filePath: String?) {
     private fun singleDownload(conn: HttpURLConnection, contentLength: Long, file: File) {
         val buffer = ByteArray(8192)
         val bufferedInputStream = BufferedInputStream(conn.inputStream)
-        val fileOutputStream = FileOutputStream(file)
+        val bufferedOutputStream = BufferedOutputStream(file.outputStream(), 8192)
 
         var length = 0
         try {
@@ -75,15 +67,16 @@ class Downloader(val url: String, val threadNum: Int, var filePath: String?) {
                     break
                 }
 
-                fileOutputStream.write(buffer, 0, dataLength)
+                bufferedOutputStream.write(buffer, 0, dataLength)
                 length += dataLength
                 downloaded.addAndGet(length)
             }
         } catch (e: IOException) {
             e.printStackTrace()
         } finally {
+            bufferedOutputStream.flush()
             bufferedInputStream.close()
-            fileOutputStream.close()
+            bufferedOutputStream.close()
         }
     }
 
