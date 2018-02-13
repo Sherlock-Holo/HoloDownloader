@@ -21,7 +21,7 @@ class DownloadStatus(private val downloaded: AtomicInteger, private val contentL
             val consoleColumns = terminal.size.columns
 
             val percentText = percentFormat.format(downloaded.toDouble() / contentLength.toDouble() * 100) + "%"
-            val speedText = speedFormat.format((downloaded.toInt() - lastTimeLength) / 1024 * (speedInterval / 1000)) + " KiB/s"
+            val speedText = speedFormat.format((downloaded.toInt() - lastTimeLength) / 1024 * (1000 / speedInterval.toDouble())) + " KiB/s"
 
             val percent = percentText.substring(0, percentText.lastIndex).toDouble() / 100
 
