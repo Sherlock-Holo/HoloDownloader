@@ -15,11 +15,23 @@ class Downloader(private val url: String, private val threadNum: Int, private va
     fun download() {
         val url = URL(this.url)
 
-        val conn = url.openConnection() as HttpURLConnection
+        val conn = try {
+            url.openConnection() as HttpURLConnection
+        } catch (e: IOException) {
+            println("open connection failed")
+            return
+        }
+
         conn.setRequestProperty("Accept", "*/*")
         conn.setRequestProperty("Range", "bytes=0-")
 
-        val responseCode = conn.responseCode
+        val responseCode = try {
+            conn.responseCode
+        } catch (e: IOException) {
+            println("get response code failed")
+            return
+        }
+
         val contentLength = conn.contentLength.toLong()
         val downloadFileName = url.file.split('/').last()
 
@@ -43,6 +55,7 @@ class Downloader(private val url: String, private val threadNum: Int, private va
             }
 
             else -> {
+                conn.disconnect()
                 println("download Threads: $threadNum\n")
                 multiDownload(file, contentLength)
             }
@@ -74,6 +87,7 @@ class Downloader(private val url: String, private val threadNum: Int, private va
         } catch (e: IOException) {
             e.printStackTrace()
         } finally {
+            conn.disconnect()
             bufferedOutputStream.flush()
             bufferedInputStream.close()
             bufferedOutputStream.close()
@@ -81,8 +95,9 @@ class Downloader(private val url: String, private val threadNum: Int, private va
     }
 
     private fun multiDownload(file: File, contentLength: Long) {
-        val randomAccessFile = RandomAccessFile(file, "rw")
+        val randomAccessFile = RandomAccessFile(file, "rwd")
         randomAccessFile.setLength(contentLength)
+        randomAccessFile.close()
 
         val errorFlag = ErrorStatus()
 

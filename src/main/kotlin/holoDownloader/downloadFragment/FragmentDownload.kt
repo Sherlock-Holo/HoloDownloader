@@ -6,6 +6,7 @@ import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
 import java.net.URL
+import java.net.UnknownServiceException
 import java.util.concurrent.atomic.AtomicInteger
 
 class FragmentDownload(
@@ -18,7 +19,13 @@ class FragmentDownload(
 ) : Runnable {
 
     override fun run() {
-        val conn = URL(url).openConnection()
+        val conn = try {
+            URL(url).openConnection()
+        } catch (e: IOException) {
+            println("download failed")
+            errorFlag.isError = true
+            return
+        }
 
         conn.setRequestProperty("Accept", "*/*")
         conn.setRequestProperty("Range", "bytes=$cursor-${cursor + size - 1}")
@@ -27,13 +34,24 @@ class FragmentDownload(
 
         if (fragmentLength != size) throw Exception("fragmentLength != size")
 
-        val bufferedInputStream = BufferedInputStream(conn.inputStream)
+        val bufferedInputStream = try {
+            BufferedInputStream(conn.inputStream)
+        } catch (e: IOException) {
+            e.printStackTrace()
+            return
+        } catch (e: UnknownServiceException) {
+            e.printStackTrace()
+            return
+        }
 
         val randomAccessFile = RandomAccessFile(file, "rwd")
 
-        assert(file.exists())
-
-        randomAccessFile.seek(cursor)
+        try {
+            randomAccessFile.seek(cursor)
+        } catch (e: IOException) {
+            e.printStackTrace()
+            return
+        }
 
         val buffer = ByteArray(8192)
 
