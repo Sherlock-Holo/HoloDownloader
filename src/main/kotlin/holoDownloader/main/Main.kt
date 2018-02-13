@@ -13,7 +13,7 @@ fun main(args: Array<String>) {
     val link = parser.getParameter("-u")
     val threadNum =
             if (parser.getParameter("-n") != null) parser.getParameter("-n")!!.toInt()
-            else 10
+            else 16
 
     if (link == null) throw Throwable("no download link or error download link")
 
