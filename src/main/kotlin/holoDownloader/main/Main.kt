@@ -15,8 +15,11 @@ fun main(args: Array<String>) {
             if (parser.getParameter("-n") != null) parser.getParameter("-n")!!.toInt()
             else 16
 
-    if (link == null) throw Throwable("no download link or error download link")
+    if (link == null) {
+        println("no download link or error download link")
+        System.exit(1)
+    }
 
-    val downloader = Downloader(link, threadNum, parser.getParameter("-o"))
+    val downloader = Downloader(link!!, threadNum, parser.getParameter("-o"))
     downloader.download()
 }
