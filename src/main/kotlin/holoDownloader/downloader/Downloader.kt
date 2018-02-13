@@ -8,7 +8,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.atomic.AtomicInteger
 
-class Downloader(private val url: String, private val threadNum: Int, private var filePath: String?) {
+class Downloader(private val url: String, private val threadNum: Int, private var filePath: String?, private val speedInterval: Long = 1000) {
     var smallFileSize = 4194304 // 4 MiB
     private val downloaded = AtomicInteger(0)
 
@@ -58,7 +58,7 @@ class Downloader(private val url: String, private val threadNum: Int, private va
         }
 
         // print the download status
-        Thread(DownloadStatus(downloaded, contentLength)).start()
+        Thread(DownloadStatus(downloaded, contentLength, speedInterval)).start()
     }
 
 

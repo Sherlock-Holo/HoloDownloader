@@ -4,7 +4,7 @@ import org.jline.terminal.TerminalBuilder
 import java.text.DecimalFormat
 import java.util.concurrent.atomic.AtomicInteger
 
-class DownloadStatus(private val downloaded: AtomicInteger, private val contentLength: Long) : Runnable {
+class DownloadStatus(private val downloaded: AtomicInteger, private val contentLength: Long, private val speedInterval: Long) : Runnable {
     private val percentFormat = DecimalFormat("0.00")
     private val speedFormat = DecimalFormat("#,###")
 
@@ -21,7 +21,7 @@ class DownloadStatus(private val downloaded: AtomicInteger, private val contentL
             val consoleColumns = terminal.size.columns
 
             val percentText = percentFormat.format(downloaded.toDouble() / contentLength.toDouble() * 100) + "%"
-            val speedText = speedFormat.format((downloaded.toInt() - lastTimeLength) / 1024) + " KiB/s"
+            val speedText = speedFormat.format((downloaded.toInt() - lastTimeLength) / 1024 * (speedInterval / 1000)) + " KiB/s"
 
             val percent = percentText.substring(0, percentText.lastIndex).toDouble() / 100
 
@@ -60,7 +60,7 @@ class DownloadStatus(private val downloaded: AtomicInteger, private val contentL
 
             lastTimeLength = downloaded.toInt()
 
-            Thread.sleep(1000)
+            Thread.sleep(speedInterval)
         }
     }
 }

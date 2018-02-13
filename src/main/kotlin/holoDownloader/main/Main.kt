@@ -20,6 +20,6 @@ fun main(args: Array<String>) {
         System.exit(1)
     }
 
-    val downloader = Downloader(link!!, threadNum, parser.getParameter("-o"))
+    val downloader = Downloader(link!!, threadNum, parser.getParameter("-o"), 500)
     downloader.download()
 }
