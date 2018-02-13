@@ -15,15 +15,12 @@ class Downloader(private val url: String, private val threadNum: Int, private va
     fun download() {
         val url = URL(this.url)
 
-        val conn = try {
-            url.openConnection() as HttpURLConnection
-        } catch (e: IOException) {
-            println("open connection failed")
+        val conn = connect(url)
+
+        if (conn == null) {
+            println("failed to connect server")
             return
         }
-
-        conn.setRequestProperty("Accept", "*/*")
-        conn.setRequestProperty("Range", "bytes=0-")
 
         val responseCode = try {
             conn.responseCode
@@ -33,9 +30,8 @@ class Downloader(private val url: String, private val threadNum: Int, private va
         }
 
         val contentLength = conn.contentLength.toLong()
-        val downloadFileName = url.file.split('/').last()
 
-        if (filePath == null) filePath = downloadFileName
+        if (filePath == null) filePath = url.file.split('/').last()
 
         val file = File(filePath)
 
@@ -95,7 +91,7 @@ class Downloader(private val url: String, private val threadNum: Int, private va
     }
 
     private fun multiDownload(file: File, contentLength: Long) {
-        val randomAccessFile = RandomAccessFile(file, "rwd")
+        val randomAccessFile = RandomAccessFile(file, "rw")
         randomAccessFile.setLength(contentLength)
         randomAccessFile.close()
 
@@ -114,5 +110,19 @@ class Downloader(private val url: String, private val threadNum: Int, private va
                 Thread(FragmentDownload(this.url, i * fragmentLength, lastFragmentLength, file, downloaded, errorFlag)).start()
             }
         }
+    }
+
+    private fun connect(url: URL): HttpURLConnection? {
+        var conn: HttpURLConnection? = null
+        for (i in 0 until 5) {
+            try {
+                conn = url.openConnection() as HttpURLConnection
+                conn.setRequestProperty("Accept", "*/*")
+                conn.setRequestProperty("Range", "bytes=0-")
+                break
+            } catch (e: IOException) {
+            }
+        }
+        return conn
     }
 }
