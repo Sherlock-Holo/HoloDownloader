@@ -23,6 +23,8 @@ repositories {
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+    compile 'org.jline:jline-terminal:3.5.1'
 }
 
 compileKotlin {

@@ -8,8 +8,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.atomic.AtomicInteger
 
-class Downloader(val url: String, val threadNum: Int, var filePath: String?) {
-    val smallFileSize = 4194304 // 4 MiB
+class Downloader(private val url: String, private val threadNum: Int, private var filePath: String?) {
+    var smallFileSize = 4194304 // 4 MiB
     private val downloaded = AtomicInteger(0)
 
     fun download() {

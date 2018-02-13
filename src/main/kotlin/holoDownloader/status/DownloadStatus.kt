@@ -1,5 +1,6 @@
 package holoDownloader.status
 
+import org.jline.terminal.TerminalBuilder
 import java.text.DecimalFormat
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -7,11 +8,7 @@ class DownloadStatus(private val downloaded: AtomicInteger, private val contentL
     private val percentFormat = DecimalFormat("0.00")
     private val speedFormat = DecimalFormat("#,###")
 
-    private val consoleColumns =
-            {
-                val s = Runtime.getRuntime().exec("tput cols").inputStream.reader().readText()
-                s.substring(0 until s.lastIndex).toInt()
-            }.invoke()
+    private val terminal = TerminalBuilder.terminal()
 
     override fun run() {
         var lastTimeLength = 0
@@ -19,6 +16,8 @@ class DownloadStatus(private val downloaded: AtomicInteger, private val contentL
         val sb = StringBuilder()
 
         do {
+            val consoleColumns = terminal.size.columns
+
             val percent = percentFormat.format(downloaded.toDouble() / contentLength.toDouble() * 100) + "%"
             val speed = speedFormat.format((downloaded.toInt() - lastTimeLength) / 1024) + " KB/s"
 
@@ -47,7 +46,7 @@ class DownloadStatus(private val downloaded: AtomicInteger, private val contentL
 
             print(sb.toString())
 
-            if (percent == "100.00") {
+            if (percent == "100.00%") {
                 println("done, use time: ${percentFormat.format((System.currentTimeMillis() - startTime) / 1_000)} seconds")
                 break
             }
