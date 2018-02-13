@@ -43,7 +43,7 @@ class Downloader(private val url: String, private val threadNum: Int, private va
             }
 
             else -> {
-                println("use $threadNum threads to download file")
+                println("Threads: $threadNum")
                 multiDownload(file, contentLength)
             }
         }
