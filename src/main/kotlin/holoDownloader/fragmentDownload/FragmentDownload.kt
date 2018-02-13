@@ -35,14 +35,12 @@ class FragmentDownload(
             val bufferedInputStream = try {
                 BufferedInputStream(conn.inputStream)
             } catch (e: IOException) {
-                e.printStackTrace()
-                return
+                continue
             } catch (e: UnknownServiceException) {
-                e.printStackTrace()
-                return
+                continue
             }
 
-            val randomAccessFile = RandomAccessFile(file, "rwd")
+            val randomAccessFile = RandomAccessFile(file, "rw")
 
             try {
                 randomAccessFile.seek(cursor)
@@ -59,7 +57,9 @@ class FragmentDownload(
 
             if (cursor >= endPos) return
         }
+
         errorFlag.isError = true
+        println("download failed")
     }
 
     private fun connect(): URLConnection? {
