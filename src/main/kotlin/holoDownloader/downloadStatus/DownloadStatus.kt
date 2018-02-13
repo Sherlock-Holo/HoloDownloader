@@ -1,4 +1,4 @@
-package holoDownloader.status
+package holoDownloader.downloadStatus
 
 import org.jline.terminal.TerminalBuilder
 import java.text.DecimalFormat
@@ -20,18 +20,18 @@ class DownloadStatus(private val downloaded: AtomicInteger, private val contentL
         while (lastTimeLength < contentLength) {
             val consoleColumns = terminal.size.columns
 
-            val percent = percentFormat.format(downloaded.toDouble() / contentLength.toDouble() * 100) + "%"
-            val speed = speedFormat.format((downloaded.toInt() - lastTimeLength) / 1024) + " KB/s"
+            val percentText = percentFormat.format(downloaded.toDouble() / contentLength.toDouble() * 100) + "%"
+            val speedText = speedFormat.format((downloaded.toInt() - lastTimeLength) / 1024) + " KiB/s"
 
-            val percentNum = percent.substring(0, percent.lastIndex).toDouble() / 100
+            val percent = percentText.substring(0, percentText.lastIndex).toDouble() / 100
 
-            val statusBarLength = consoleColumns - 2 - 3 - percent.length - speed.length
+            val statusBarLength = consoleColumns - 2 - 3 - percentText.length - speedText.length
 
             sb.delete(0, sb.length)
 
             sb.append("[")
 
-            val statusLength = (percentNum * statusBarLength).toInt()
+            val statusLength = (percent * statusBarLength).toInt()
 
             for (i in 0 until statusLength) {
                 if (i < statusLength - 1) sb.append('=')
@@ -42,14 +42,17 @@ class DownloadStatus(private val downloaded: AtomicInteger, private val contentL
                 sb.append(' ')
             }
 
-            sb.append("] $percent  $speed")
+            sb.append("] $percentText  $speedText")
 
             print(sb.toString())
 
-            if (percent == "100.00%") {
+            if (percentText == "100.00%") {
                 println()
                 println()
-                println("done, use time: ${percentFormat.format((System.currentTimeMillis() - startTime) / 1_000)} seconds")
+                val endTime = System.currentTimeMillis()
+                val averageSpeed = downloaded.toDouble() / (endTime - startTime) / 1024 * 1000
+                println("done, use time: ${(endTime - startTime) / 1_000} seconds, " +
+                        "average speed: ${percentFormat.format(averageSpeed)} KiB/s")
                 break
             }
 
