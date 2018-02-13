@@ -1,8 +1,8 @@
 package holoDownloader.downloader
 
-import holoDownloader.downloadFragment.FragmentDownload
+import holoDownloader.fragmentDownload.FragmentDownload
 import holoDownloader.errorStatus.ErrorStatus
-import holoDownloader.status.DownloadStatus
+import holoDownloader.downloadStatus.DownloadStatus
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
@@ -44,7 +44,7 @@ class Downloader(private val url: String, private val threadNum: Int, private va
         }
 
         when {
-            responseCode != 206 -> {
+            responseCode != HttpURLConnection.HTTP_PARTIAL -> {
                 println("server not support multi threads download, use single mode\n")
                 singleDownload(conn, contentLength, file)
             }
