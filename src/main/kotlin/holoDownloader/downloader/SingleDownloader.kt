@@ -16,33 +16,30 @@ class SingleDownloader(
 
     override fun startDownload() {
         client.newCall(request).enqueue(object : Callback {
-            override fun onResponse(call: Call?, response: Response?) {
-                val body = try {
-                    response!!.body() ?: TODO()
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                    errorFlag.isError = true
-                    return
-                }
-
-                val httpInputStream = BufferedInputStream(body.byteStream())
-                val fileOutputStream = BufferedOutputStream(file.outputStream())
+            override fun onResponse(call: Call, response: Response) {
+                var httpInputStream: BufferedInputStream? = null
+                var fileOutputStream: BufferedOutputStream? = null
 
                 try {
+                    val body = response.body() ?: TODO()
+
+                    httpInputStream = BufferedInputStream(body.byteStream())
+                    fileOutputStream = BufferedOutputStream(file.outputStream())
+
                     httpInputStream.transferTo(fileOutputStream)
                 } catch (e: IOException) {
                     errorFlag.isError = true
                     e.printStackTrace()
                     return
                 } finally {
-                    fileOutputStream.close()
-                    httpInputStream.close()
+                    fileOutputStream?.close()
+                    httpInputStream?.close()
                     response.close()
                 }
             }
 
-            override fun onFailure(call: Call?, e: IOException?) {
-                e!!.printStackTrace()
+            override fun onFailure(call: Call, e: IOException) {
+                e.printStackTrace()
             }
         })
     }
