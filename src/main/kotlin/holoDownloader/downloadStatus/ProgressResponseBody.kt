@@ -27,11 +27,8 @@ class ProgressResponseBody(private val responseBody: ResponseBody, private val d
 
     private fun source(source: Source): Source {
         return object : ForwardingSource(source) {
-            var contentRead = 0L
-
             override fun read(sink: Buffer, byteCount: Long): Long {
                 val length = super.read(sink, byteCount)
-                contentRead += length
                 updateStatus(length)
                 return length
             }
