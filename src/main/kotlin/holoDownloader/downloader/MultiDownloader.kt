@@ -6,12 +6,10 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
-import java.util.concurrent.atomic.AtomicInteger
 
 class MultiDownloader(private val client: OkHttpClient,
                       private val requests: Array<Fragment>,
                       private val file: File,
-                      private val downloaded: AtomicInteger,
                       private val errorFlag: ErrorFlag
 ) : Downloader {
 
@@ -50,7 +48,6 @@ class MultiDownloader(private val client: OkHttpClient,
                     }
 
                     randomAccessFile.write(buffer, 0, length)
-                    downloaded.addAndGet(length)
                     contentRead += length
                 }
             } catch (e: IOException) {

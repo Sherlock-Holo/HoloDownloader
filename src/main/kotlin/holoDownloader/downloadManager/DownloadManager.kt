@@ -1,6 +1,7 @@
 package holoDownloader.downloadManager
 
 import holoDownloader.downloadStatus.DownloadStatus
+import holoDownloader.downloadStatus.ProgressInterceptor
 import holoDownloader.downloader.MultiDownloader
 import holoDownloader.downloader.SingleDownloader
 import holoDownloader.errorFlag.ErrorFlag
@@ -11,7 +12,7 @@ import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 class DownloadManager(private val url: String,
                       private val threadNum: Int,
@@ -20,12 +21,13 @@ class DownloadManager(private val url: String,
 ) {
 
     var smallFileSize = 4194304L // 4 MiB
-    private val downloaded = AtomicInteger(0)
+    private val downloaded = AtomicLong(0)
     private val tmp = File("/tmp/holoDownloader.tmp")
     private val client =
             OkHttpClient.Builder()
                     .cache(Cache(tmp, smallFileSize))
                     .connectTimeout(30, TimeUnit.SECONDS)
+                    .addInterceptor(ProgressInterceptor(downloaded))
                     .build()
 
     private val errorFlag = ErrorFlag()
@@ -60,7 +62,7 @@ class DownloadManager(private val url: String,
             contentLength <= smallFileSize || response.code() != 206 -> {
                 println("single mode")
                 response.close()
-                singleDownload(request, file, contentLength)
+                singleDownload(request, file)
             }
             else -> {
                 println("multi mode")
@@ -73,8 +75,8 @@ class DownloadManager(private val url: String,
     }
 
 
-    private fun singleDownload(request: Request, file: File, contentLength: Long) {
-        SingleDownloader(client, request, file, contentLength, downloaded, errorFlag).startDownload()
+    private fun singleDownload(request: Request, file: File) {
+        SingleDownloader(client, request, file, errorFlag).startDownload()
     }
 
     private fun multiDownload(file: File, contentLength: Long) {
@@ -94,6 +96,6 @@ class DownloadManager(private val url: String,
             MultiDownloader.Fragment(request, startPos)
         }
 
-        MultiDownloader(client, requests, file, downloaded, errorFlag).startDownload()
+        MultiDownloader(client, requests, file, errorFlag).startDownload()
     }
 }

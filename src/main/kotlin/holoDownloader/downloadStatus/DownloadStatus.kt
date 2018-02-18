@@ -4,10 +4,10 @@ import holoDownloader.errorFlag.ErrorFlag
 import okhttp3.OkHttpClient
 import org.jline.terminal.TerminalBuilder
 import java.text.DecimalFormat
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 class DownloadStatus(
-        private val downloaded: AtomicInteger,
+        private val downloaded: AtomicLong,
         private val contentLength: Long,
         private val speedInterval: Long,
         private val errorFlag: ErrorFlag,
