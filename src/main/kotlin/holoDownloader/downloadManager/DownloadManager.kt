@@ -28,6 +28,7 @@ class DownloadManager(private val url: String,
                     .cache(Cache(tmp, smallFileSize))
                     .connectTimeout(30, TimeUnit.SECONDS)
                     .addInterceptor(ProgressInterceptor(downloaded))
+                    .retryOnConnectionFailure(true)
                     .build()
 
     private val errorFlag = ErrorFlag()
@@ -65,7 +66,7 @@ class DownloadManager(private val url: String,
                 singleDownload(request, file)
             }
             else -> {
-                println("multi mode")
+                println("$threadNum threads mode")
                 response.close()
                 multiDownload(file, contentLength)
             }
@@ -81,9 +82,6 @@ class DownloadManager(private val url: String,
 
     private fun multiDownload(file: File, contentLength: Long) {
         val fragmentLength = contentLength / threadNum
-
-        println("fragment length: $fragmentLength")
-
 
         val requests = Array(threadNum) {
             val builder = Request.Builder().url(url)
