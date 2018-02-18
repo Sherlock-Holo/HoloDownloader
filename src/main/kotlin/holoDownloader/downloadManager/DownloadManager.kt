@@ -40,12 +40,34 @@ class DownloadManager(private val url: String,
         }
 
         val contentLength = response.body()!!.contentLength()
-        val file =
+        var file =
                 if (filePath == null) {
                     File(url.split('/').last())
                 } else File(filePath)
 
-        if (file.exists()) file.delete()
+        if (file.exists()) {
+            print("file already exists, delete it? [y/yes, n/no]: ")
+
+            val answer = System.`in`.bufferedReader().readLine().toLowerCase()
+
+            when (answer) {
+                "y", "yes" -> {
+                    file.renameTo(File(file.path + ".backup"))
+
+                    file =
+                            if (filePath == null) File(url.split('/').last())
+                            else File(filePath)
+
+                    println("original file is ${file.path + ".backup"}")
+                    println()
+                }
+
+                else -> {
+                    file.delete()
+                    println()
+                }
+            }
+        }
 
         val randomAccessFile = RandomAccessFile(file, "rw")
 
