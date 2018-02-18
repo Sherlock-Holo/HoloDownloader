@@ -5,7 +5,6 @@ import holoDownloader.downloadStatus.ProgressInterceptor
 import holoDownloader.downloader.MultiDownloader
 import holoDownloader.downloader.SingleDownloader
 import holoDownloader.errorFlag.ErrorFlag
-import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -22,21 +21,14 @@ class DownloadManager(private val url: String,
 
     var smallFileSize = 4194304L // 4 MiB
     private val downloaded = AtomicLong(0)
-    private val tmp = File("/tmp/holoDownloader.tmp")
     private val client =
             OkHttpClient.Builder()
-                    .cache(Cache(tmp, smallFileSize))
                     .connectTimeout(30, TimeUnit.SECONDS)
                     .addInterceptor(ProgressInterceptor(downloaded))
                     .retryOnConnectionFailure(true)
                     .build()
 
     private val errorFlag = ErrorFlag()
-
-    init {
-        if (tmp.exists()) tmp.delete()
-        tmp.deleteOnExit()
-    }
 
     fun download() {
         val request = Request.Builder().url(url).header("Range", "bytes=0-").build()
