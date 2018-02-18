@@ -19,12 +19,14 @@ sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
+    jcenter()
 }
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     compile 'org.jline:jline-terminal:3.5.1'
+    implementation 'com.squareup.okhttp3:okhttp:3.9.1'
 }
 
 compileKotlin {

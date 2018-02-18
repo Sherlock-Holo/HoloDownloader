@@ -31,49 +31,56 @@ class DownloadStatus(
         val sb = StringBuilder()
 
         while (lastTimeLength < contentLength) {
-            val consoleColumns = terminal.size.columns
+            val percentText =
+                    percentFormat.format(downloaded.toDouble() / contentLength.toDouble() * 100) + "%"
 
-            val percentText = percentFormat.format(downloaded.toDouble() / contentLength.toDouble() * 100) + "%"
-            val speedText = speedFormat.format((downloaded.toInt() - lastTimeLength) / 1024 * (1000 / speedInterval.toDouble())) + " KiB/s"
+            val speedText =
+                    speedFormat.format((downloaded.toInt() - lastTimeLength) / 1024 * (1000 / speedInterval.toDouble())) + " KiB/s"
 
-            val percent = percentText.substring(0, percentText.lastIndex).toDouble() / 100
+            display(sb, percentText, speedText)
 
-            val statusBarLength = consoleColumns - 2 - 3 - percentText.length - speedText.length
+            lastTimeLength = downloaded.toInt()
 
-            sb.delete(0, sb.length)
-
-            sb.append("[")
-
-            val statusLength = (percent * statusBarLength).toInt()
-
-            for (i in 0 until statusLength) {
-                if (i < statusLength - 1) sb.append('=')
-                else sb.append('>')
-            }
-
-            for (i in 0 until statusBarLength - statusLength) {
-                sb.append(' ')
-            }
-
-            sb.append("] $percentText  $speedText")
-
-            print(sb.toString())
-
-            if (percentText == "100.00%") {
+            if (lastTimeLength.toLong() == contentLength) {
                 println()
                 println()
                 val endTime = System.currentTimeMillis()
                 val averageSpeed = downloaded.toDouble() / (endTime - startTime) / 1024 * 1000
                 println("done, use time: ${(endTime - startTime) / 1_000} seconds, " +
                         "average speed: ${percentFormat.format(averageSpeed)} KiB/s")
-                break
+                return
             }
 
             print('\r')
 
-            lastTimeLength = downloaded.toInt()
-
             Thread.sleep(speedInterval)
         }
+    }
+
+    private fun display(sb: StringBuilder, percentText: String, speedText: String) {
+        val consoleColumns = terminal.size.columns
+
+        val percent = percentText.substring(0, percentText.lastIndex).toDouble() / 100
+
+        val statusBarLength = consoleColumns - 2 - 3 - percentText.length - speedText.length
+
+        sb.delete(0, sb.length)
+
+        sb.append("[")
+
+        val statusLength = (percent * statusBarLength).toInt()
+
+        for (i in 0 until statusLength) {
+            if (i < statusLength - 1) sb.append('=')
+            else sb.append('>')
+        }
+
+        for (i in 0 until statusBarLength - statusLength) {
+            sb.append(' ')
+        }
+
+        sb.append("] $percentText  $speedText")
+
+        print(sb.toString())
     }
 }

@@ -1,7 +1,8 @@
 package holoDownloader.main
 
 import holoDownloader.cmdParser.CmdParser
-import holoDownloader.downloader.Downloader
+import holoDownloader.downloadManager.DownloadManager
+
 
 fun main(args: Array<String>) {
     val parser = CmdParser()
@@ -19,6 +20,6 @@ fun main(args: Array<String>) {
         System.exit(1)
     }
 
-    val downloader = Downloader(link!!, threadNum, parser.getParameter("-o"), 500)
+    val downloader = DownloadManager(link!!, threadNum, parser.getParameter("-o"), 500)
     downloader.download()
 }
