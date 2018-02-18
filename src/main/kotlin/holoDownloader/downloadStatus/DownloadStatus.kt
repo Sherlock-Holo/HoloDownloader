@@ -1,6 +1,7 @@
 package holoDownloader.downloadStatus
 
 import holoDownloader.errorFlag.ErrorFlag
+import okhttp3.OkHttpClient
 import org.jline.terminal.TerminalBuilder
 import java.text.DecimalFormat
 import java.util.concurrent.atomic.AtomicInteger
@@ -9,7 +10,8 @@ class DownloadStatus(
         private val downloaded: AtomicInteger,
         private val contentLength: Long,
         private val speedInterval: Long,
-        private val errorFlag: ErrorFlag
+        private val errorFlag: ErrorFlag,
+        private val client: OkHttpClient
 ) : Runnable {
 
     private val percentFormat = DecimalFormat("0.00")
@@ -48,6 +50,8 @@ class DownloadStatus(
                 val averageSpeed = downloaded.toDouble() / (endTime - startTime) / 1024 * 1000
                 println("done, use time: ${(endTime - startTime) / 1_000} seconds, " +
                         "average speed: ${percentFormat.format(averageSpeed)} KiB/s")
+
+                client.dispatcher().executorService().shutdown()
                 return
             }
 

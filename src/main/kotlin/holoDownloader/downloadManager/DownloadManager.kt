@@ -25,7 +25,7 @@ class DownloadManager(private val url: String,
     private val client =
             OkHttpClient.Builder()
                     .cache(Cache(tmp, smallFileSize))
-                    .connectTimeout(10, TimeUnit.SECONDS)
+                    .connectTimeout(30, TimeUnit.SECONDS)
                     .build()
 
     private val errorFlag = ErrorFlag()
@@ -69,7 +69,7 @@ class DownloadManager(private val url: String,
             }
         }
 
-//        Thread(DownloadStatus(downloaded, contentLength, speedInterval, errorFlag)).start()
+        Thread(DownloadStatus(downloaded, contentLength, speedInterval, errorFlag, client)).start()
     }
 
 
@@ -79,17 +79,17 @@ class DownloadManager(private val url: String,
 
     private fun multiDownload(file: File, contentLength: Long) {
         val fragmentLength = contentLength / threadNum
-        val lastFragmentLength =
-                if (fragmentLength * threadNum != contentLength) contentLength - fragmentLength * threadNum + fragmentLength
-                else fragmentLength
+
+        println("fragment length: $fragmentLength")
+
 
         val requests = Array(threadNum) {
             val builder = Request.Builder().url(url)
             val startPos = it * fragmentLength
 
             val request =
-                    if (it != threadNum - 1) builder.header("range", "$startPos-${startPos + fragmentLength - 1}").build()
-                    else builder.header("range", "$startPos-${startPos + lastFragmentLength - 1}").build()
+                    if (it != threadNum - 1) builder.header("Range", "bytes=$startPos-${startPos + fragmentLength - 1}").build()
+                    else builder.header("Range", "bytes=$startPos-").build()
 
             MultiDownloader.Fragment(request, startPos)
         }

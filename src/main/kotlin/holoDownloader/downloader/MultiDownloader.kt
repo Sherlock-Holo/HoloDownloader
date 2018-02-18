@@ -24,54 +24,49 @@ class MultiDownloader(private val client: OkHttpClient,
 
             val call = client.newCall(request)
 
-            call.enqueue(object : Callback {
-                override fun onResponse(call: Call?, response: Response?) {
-                    val body = try {
-                        response!!.body() ?: TODO()
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                        errorFlag.isError = true
-                        return
-                    }
-
-                    val bufferedInputStream = BufferedInputStream(body.byteStream())
-                    val contentLength = body.contentLength()
-                    var contentRead = 0
-                    val buffer = ByteArray(8192)
-
-                    try {
-                        while (contentRead < contentLength) {
-                            val length = bufferedInputStream.read(buffer)
-                            if (length < 0) {
-                                errorFlag.isError = true
-                                break
-                            }
-
-                            randomAccessFile.write(buffer, 0, length)
-                            downloaded.addAndGet(length)
-                            contentRead += length
-                        }
-
-                        println("fragment done")
-                        
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                        errorFlag.isError = true
-                        return
-
-                    } finally {
-                        bufferedInputStream.close()
-                        randomAccessFile.close()
-                        response.close()
-                    }
-                }
-
-                override fun onFailure(call: Call?, e: IOException?) {
-                    e!!.printStackTrace()
-                }
-            })
+            call.enqueue(DownloadCallBack(randomAccessFile))
         }
     }
 
     data class Fragment(val request: Request, val startPos: Long)
+
+    private inner class DownloadCallBack(private val randomAccessFile: RandomAccessFile) : Callback {
+        override fun onResponse(call: Call?, response: Response?) {
+            var bufferedInputStream: BufferedInputStream? = null
+
+            try {
+                val body = response!!.body() ?: TODO()
+
+                bufferedInputStream = BufferedInputStream(body.byteStream())
+                val contentLength = body.contentLength()
+                var contentRead = 0
+                val buffer = ByteArray(8192)
+
+                while (contentRead < contentLength) {
+                    val length = bufferedInputStream.read(buffer)
+                    if (length < 0) {
+                        errorFlag.isError = true
+                        break
+                    }
+
+                    randomAccessFile.write(buffer, 0, length)
+                    downloaded.addAndGet(length)
+                    contentRead += length
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+                errorFlag.isError = true
+                return
+
+            } finally {
+                bufferedInputStream?.close()
+                randomAccessFile.close()
+                response?.close()
+            }
+        }
+
+        override fun onFailure(call: Call?, e: IOException?) {
+            e!!.printStackTrace()
+        }
+    }
 }
