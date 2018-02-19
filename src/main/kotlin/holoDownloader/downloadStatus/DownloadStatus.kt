@@ -20,19 +20,19 @@ class DownloadStatus(
     private val terminal = TerminalBuilder.terminal()
 
     override fun run() {
-        if (errorFlag.isError) {
-            println()
-            println("download failed")
-            return
-        }
-
         val startTime = System.currentTimeMillis()
 
-        var lastTimeLength = 0
+        var lastTimeLength = 0L
 
         val sb = StringBuilder()
 
         while (lastTimeLength < contentLength) {
+            if (errorFlag.isError) {
+                println()
+                println("download failed")
+                return
+            }
+
             val percentText =
                     percentFormat.format(downloaded.toDouble() / contentLength.toDouble() * 100) + "%"
 
@@ -41,19 +41,9 @@ class DownloadStatus(
 
             display(sb, percentText, speedText)
 
-            lastTimeLength = downloaded.toInt()
+            lastTimeLength = downloaded.toLong()
 
-            if (lastTimeLength.toLong() == contentLength) {
-                println()
-                println()
-                val endTime = System.currentTimeMillis()
-                val averageSpeed = downloaded.toDouble() / (endTime - startTime) / 1024 * 1000
-                println("done, use time: ${(endTime - startTime) / 1_000} seconds, " +
-                        "average speed: ${percentFormat.format(averageSpeed)} KiB/s")
-
-                client.dispatcher().executorService().shutdown()
-                return
-            }
+            if (isFinish(startTime, lastTimeLength)) return
 
             print('\r')
 
@@ -86,5 +76,19 @@ class DownloadStatus(
         sb.append("] $percentText  $speedText")
 
         print(sb.toString())
+    }
+
+    private fun isFinish(startTime: Long, lastTimeLength: Long): Boolean {
+        return if (lastTimeLength == contentLength) {
+            println()
+            println()
+            val endTime = System.currentTimeMillis()
+            val averageSpeed = downloaded.toDouble() / (endTime - startTime) / 1024 * 1000
+            println("done, use time: ${(endTime - startTime) / 1_000} seconds, " +
+                    "average speed: ${percentFormat.format(averageSpeed)} KiB/s")
+
+            client.dispatcher().executorService().shutdown()
+            true
+        } else false
     }
 }
