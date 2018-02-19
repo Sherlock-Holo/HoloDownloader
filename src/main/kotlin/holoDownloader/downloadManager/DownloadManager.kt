@@ -40,34 +40,9 @@ class DownloadManager(private val url: String,
         }
 
         val contentLength = response.body()!!.contentLength()
-        var file =
-                if (filePath == null) {
-                    File(url.split('/').last())
-                } else File(filePath)
+        val fileName = filePath ?: url.split('/').last()
 
-        if (file.exists()) {
-            print("file already exists, delete it? [y/yes, n/no]: ")
-
-            val answer = System.`in`.bufferedReader().readLine().toLowerCase()
-
-            when (answer) {
-                "y", "yes" -> {
-                    file.renameTo(File(file.path + ".backup"))
-
-                    file =
-                            if (filePath == null) File(url.split('/').last())
-                            else File(filePath)
-
-                    println("original file is ${file.path + ".backup"}")
-                    println()
-                }
-
-                else -> {
-                    file.delete()
-                    println()
-                }
-            }
-        }
+        val file = checkFile(fileName)
 
         val randomAccessFile = RandomAccessFile(file, "rw")
 
@@ -109,5 +84,31 @@ class DownloadManager(private val url: String,
         }
 
         MultiDownloader(client, requests, file, errorFlag).startDownload()
+    }
+
+    private fun checkFile(fileName: String): File {
+        val file = File(fileName)
+        if (file.exists()) {
+            print("file already exists, delete it? [y/yes, n/no]: ")
+
+            val answer = System.`in`.bufferedReader().readLine().toLowerCase()
+
+            when (answer) {
+                "y", "yes" -> {
+                    file.renameTo(File(file.path + ".backup"))
+
+                    println("original file is ${file.path + ".backup"}")
+                    println()
+
+                    return File(fileName)
+                }
+
+                else -> {
+                    file.delete()
+                    println()
+                    return file
+                }
+            }
+        } else return file
     }
 }
