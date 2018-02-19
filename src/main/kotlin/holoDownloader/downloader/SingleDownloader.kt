@@ -2,8 +2,9 @@ package holoDownloader.downloader
 
 import holoDownloader.errorFlag.ErrorFlag
 import okhttp3.*
-import java.io.BufferedInputStream
-import java.io.BufferedOutputStream
+import okio.BufferedSink
+import okio.BufferedSource
+import okio.Okio
 import java.io.File
 import java.io.IOException
 
@@ -12,28 +13,32 @@ class SingleDownloader(
         private val request: Request,
         private val file: File,
         private val errorFlag: ErrorFlag
-) : Downloader {
+) : Downloader, Pauseable {
+
+    private lateinit var resp: Response
 
     override fun startDownload() {
         client.newCall(request).enqueue(object : Callback {
             override fun onResponse(call: Call, response: Response) {
-                var httpInputStream: BufferedInputStream? = null
-                var fileOutputStream: BufferedOutputStream? = null
+                resp = response
+
+                var bodySource: BufferedSource? = null
+                var fileSink: BufferedSink? = null
 
                 try {
                     val body = response.body() ?: TODO()
 
-                    httpInputStream = BufferedInputStream(body.byteStream())
-                    fileOutputStream = BufferedOutputStream(file.outputStream())
+                    bodySource = body.source()
+                    fileSink = Okio.buffer(Okio.sink(file))
 
-                    httpInputStream.transferTo(fileOutputStream)
+                    fileSink.writeAll(bodySource!!)
                 } catch (e: IOException) {
                     errorFlag.isError = true
                     e.printStackTrace()
                     return
                 } finally {
-                    fileOutputStream?.close()
-                    httpInputStream?.close()
+                    bodySource?.close()
+                    fileSink?.close()
                     response.close()
                 }
             }
@@ -42,5 +47,13 @@ class SingleDownloader(
                 e.printStackTrace()
             }
         })
+    }
+
+    override fun pauseDownload() {
+        resp.close()
+    }
+
+    override fun continueDownload() {
+        startDownload()
     }
 }

@@ -11,7 +11,9 @@ class MultiDownloader(private val client: OkHttpClient,
                       private val requests: Array<Fragment>,
                       private val file: File,
                       private val errorFlag: ErrorFlag
-) : Downloader {
+) : Downloader, Pauseable {
+
+    private var stop = false
 
     override fun startDownload() {
         requests.forEach {
@@ -22,13 +24,22 @@ class MultiDownloader(private val client: OkHttpClient,
 
             val call = client.newCall(request)
 
-            call.enqueue(DownloadCallBack(randomAccessFile))
+            call.enqueue(DownloadCallBack(it, randomAccessFile))
         }
     }
 
-    data class Fragment(val request: Request, val startPos: Long)
+    override fun pauseDownload() {
+        stop = true
+    }
 
-    private inner class DownloadCallBack(private val randomAccessFile: RandomAccessFile) : Callback {
+    override fun continueDownload() {
+        stop = false
+        startDownload()
+    }
+
+    data class Fragment(val request: Request, var startPos: Long)
+
+    private inner class DownloadCallBack(private val fragment: Fragment, private val randomAccessFile: RandomAccessFile) : Callback {
         override fun onResponse(call: Call, response: Response) {
             var bufferedInputStream: BufferedInputStream? = null
 
@@ -37,15 +48,19 @@ class MultiDownloader(private val client: OkHttpClient,
 
                 bufferedInputStream = BufferedInputStream(body.byteStream())
                 val contentLength = body.contentLength()
-                var contentRead = 0
+                var contentRead = 0L
                 val buffer = ByteArray(8192)
 
                 while (contentRead < contentLength) {
+                    if (stop) break
+
                     val length = bufferedInputStream.read(buffer)
                     if (length < 0) {
                         errorFlag.isError = true
                         break
                     }
+
+                    fragment.startPos += length
 
                     randomAccessFile.write(buffer, 0, length)
                     contentRead += length
