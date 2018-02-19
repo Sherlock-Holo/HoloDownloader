@@ -15,6 +15,9 @@ class MultiDownloader(private val client: OkHttpClient,
 
     private var stop = false
 
+    val isFinish: Boolean
+        get() = requests.all { it.finish }
+
     override fun startDownload() {
         requests.forEach {
             val request = it.request
@@ -37,7 +40,9 @@ class MultiDownloader(private val client: OkHttpClient,
         startDownload()
     }
 
-    data class Fragment(val request: Request, var startPos: Long)
+    inner class Fragment(val request: Request, var startPos: Long) {
+        var finish = false
+    }
 
     private inner class DownloadCallBack(private val fragment: Fragment, private val randomAccessFile: RandomAccessFile) : Callback {
         override fun onResponse(call: Call, response: Response) {
@@ -52,12 +57,12 @@ class MultiDownloader(private val client: OkHttpClient,
                 val buffer = ByteArray(8192)
 
                 while (contentRead < contentLength) {
-                    if (stop) break
+                    if (stop) return
 
                     val length = bufferedInputStream.read(buffer)
                     if (length < 0) {
                         errorFlag.isError = true
-                        break
+                        return
                     }
 
                     fragment.startPos += length
@@ -65,6 +70,9 @@ class MultiDownloader(private val client: OkHttpClient,
                     randomAccessFile.write(buffer, 0, length)
                     contentRead += length
                 }
+
+                fragment.finish = true
+
             } catch (e: IOException) {
                 e.printStackTrace()
                 errorFlag.isError = true

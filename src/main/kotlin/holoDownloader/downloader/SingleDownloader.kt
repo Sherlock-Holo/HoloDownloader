@@ -17,6 +17,9 @@ class SingleDownloader(
 
     private lateinit var resp: Response
 
+    var isFinish = false
+        private set
+
     override fun startDownload() {
         client.newCall(request).enqueue(object : Callback {
             override fun onResponse(call: Call, response: Response) {
@@ -32,6 +35,8 @@ class SingleDownloader(
                     fileSink = Okio.buffer(Okio.sink(file))
 
                     fileSink.writeAll(bodySource!!)
+                    isFinish = true
+
                 } catch (e: IOException) {
                     errorFlag.isError = true
                     e.printStackTrace()
