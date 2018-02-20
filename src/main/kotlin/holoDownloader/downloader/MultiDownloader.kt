@@ -40,7 +40,7 @@ class MultiDownloader(private val client: OkHttpClient,
         startDownload()
     }
 
-    inner class Fragment(val request: Request, var startPos: Long) {
+    class Fragment(val request: Request, var startPos: Long) {
         var finish = false
     }
 
