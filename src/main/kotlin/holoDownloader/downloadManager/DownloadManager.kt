@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicLong
 class DownloadManager(private val url: String,
                       private val threadNum: Int,
                       private var filePath: String?,
+                      timeout: Long,
                       private val speedInterval: Long = 1000
 ) {
 
@@ -23,7 +24,7 @@ class DownloadManager(private val url: String,
     private val downloaded = AtomicLong(0)
     private val client =
             OkHttpClient.Builder()
-                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .connectTimeout(timeout, TimeUnit.SECONDS)
                     .addInterceptor(ProgressInterceptor(downloaded))
                     .retryOnConnectionFailure(true)
                     .build()
@@ -41,10 +42,14 @@ class DownloadManager(private val url: String,
 
         val contentLength = response.body()!!.contentLength()
         val fileName = filePath ?: url.split('/').last()
+        val tmpFileName = fileName + ".tmp"
 
         val file = checkFile(fileName)
+        val tmpFile = File(tmpFileName)
 
-        val randomAccessFile = RandomAccessFile(file, "rw")
+        if (tmpFile.exists()) tmpFile.delete()
+
+        val randomAccessFile = RandomAccessFile(tmpFile, "rw")
 
         randomAccessFile.setLength(contentLength)
 
@@ -52,24 +57,24 @@ class DownloadManager(private val url: String,
             contentLength <= smallFileSize || response.code() != 206 -> {
                 println("single mode")
                 response.close()
-                singleDownload(request, file)
+                singleDownload(request, tmpFile)
             }
             else -> {
                 println("$threadNum threads mode")
                 response.close()
-                multiDownload(file, contentLength)
+                multiDownload(tmpFile, contentLength)
             }
         }
 
-        Thread(DownloadStatus(downloaded, contentLength, speedInterval, errorFlag, client)).start()
+        Thread(DownloadStatus(downloaded, contentLength, speedInterval, errorFlag, file, tmpFile, client)).start()
     }
 
 
-    private fun singleDownload(request: Request, file: File) {
-        SingleDownloader(client, request, file, errorFlag).startDownload()
+    private fun singleDownload(request: Request, tmpFile: File) {
+        SingleDownloader(client, request, tmpFile, errorFlag).startDownload()
     }
 
-    private fun multiDownload(file: File, contentLength: Long) {
+    private fun multiDownload(tmpFile: File, contentLength: Long) {
         val fragmentLength = contentLength / threadNum
 
         val requests = Array(threadNum) {
@@ -83,7 +88,7 @@ class DownloadManager(private val url: String,
             MultiDownloader.Fragment(request, startPos)
         }
 
-        MultiDownloader(client, requests, file, errorFlag).startDownload()
+        MultiDownloader(client, requests, tmpFile, errorFlag).startDownload()
     }
 
     private fun checkFile(fileName: String): File {
@@ -94,7 +99,7 @@ class DownloadManager(private val url: String,
             val answer = System.`in`.bufferedReader().readLine().toLowerCase()
 
             when (answer) {
-                "y", "yes" -> {
+                "n", "no" -> {
                     file.renameTo(File(file.path + ".backup"))
 
                     println("original file is ${file.path + ".backup"}")
